@@ -1,0 +1,1 @@
+web: python -m ona.bot.main 
