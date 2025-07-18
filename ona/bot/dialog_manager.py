@@ -18,7 +18,7 @@ from ona.bot.dialog_flow.phase_3_emotions import (
     generate_phase_3_response,
     analyze_emotion_and_thinking,
 )
-from ona.bot.dialog_flow.phase_4_solutions import explore_resources, collaborative_planning
+from ona.bot.dialog_flow.phase_4_solutions import get_all_phase_4_questions
 from ona.bot.dialog_flow.phase_5_summary import summarize_insights
 from ona.bot.utils.security import sanitize_user_input
 
