@@ -228,30 +228,30 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
         current_resource = user_data.get("resource_step", "resources")
         topic = user_data.get("topic", "")
         history = [m["content"] for m in get_dialog_history(user_id) if m["role"] == "user"]
-
+    
+        # Новый объединённый вызов
+        all_questions = get_all_phase_4_questions(topic, history)
+    
         if current_resource == "resources":
             save_user_data(user_id, "resource_step", "plan_1")
-            questions = explore_resources(topic, history)
-            question, options = questions[0]
+            question, options = all_questions["resources"][0]
             text = f"{question}\n" + "\n".join(options)
             append_dialog_history(user_id, text, "assistant")
             await message.answer(text)
             return
-
+    
         elif current_resource == "plan_1":
             save_user_data(user_id, "resource_step", "plan_2")
-            questions = collaborative_planning(topic, history)
-            question, options = questions[0]
+            question, options = all_questions["planning"][0]
             text = f"{question}\n" + "\n".join(options)
             await state.update_data(last_options=[opt[3:].strip() for opt in options])
             append_dialog_history(user_id, text, "assistant")
             await message.answer(text)
             return
-
+    
         elif current_resource == "plan_2":
             await state.set_state(DialogState.phase_5_summary)
-            questions = collaborative_planning(topic, history)
-            question, options = questions[1]
+            question, options = all_questions["planning"][1]
             text = f"{question}\n" + "\n".join(options)
             await state.update_data(last_options=[opt[3:].strip() for opt in options])
             append_dialog_history(user_id, text, "assistant")
