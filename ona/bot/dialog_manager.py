@@ -4,6 +4,7 @@ from aiogram.types import Message
 from aiogram.methods import SendChatAction
 from ona.bot.state import DialogState
 from ona.bot.prompt_template import build_prompt
+from ona.bot.dialog_flow.phase_2_response import generate_phase_2_response  # вверху файла
 from ona.bot.safety import detect_crisis, generate_crisis_response
 from ona.bot.supabase_service import (
     save_user_data,
@@ -22,7 +23,7 @@ from ona.bot.dialog_flow.phase_3_emotions import (
 from ona.bot.dialog_flow.phase_4_solutions import explore_resources, collaborative_planning
 from ona.bot.dialog_flow.phase_5_summary import summarize_insights
 from ona.bot.utils.security import sanitize_user_input
-from ona.bot.dialog_flow.phase_2_response import generate_phase_2_response  # вверху файла
+
 
 PHASE_ORDER = [
     DialogState.phase_1_init,
