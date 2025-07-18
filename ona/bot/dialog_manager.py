@@ -64,8 +64,10 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
         await message.bot(SendChatAction(chat_id=message.chat.id, action="typing"))
         await message.answer(full_text)
         await state.set_state(DialogState.phase_2_listen)
-        save_user_data(user_id, "grow_step", "goal")
-        save_user_data(user_id, "topic", "")
+        bulk_save_user_data(user_id, {
+            "grow_step": "goal",
+            "topic": ""
+        })
         return
 
     if detect_crisis(user_input):
@@ -117,12 +119,14 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
         topic = user_data.get("topic", "")
 
         # Сохраняем текущий ответ
-        save_user_data(user_id, f"grow_{current_grow}", user_input)
-
-        # Если это первая фраза → запоминаем как тему
         if current_grow == "goal" and not topic:
-            save_user_data(user_id, "topic", user_input)
+            bulk_save_user_data(user_id, {
+                f"grow_{current_grow}": user_input,
+                "topic": user_input
+            })
             topic = user_input
+        else:
+            save_user_data(user_id, f"grow_{current_grow}", user_input)
 
         # Собираем все предыдущие grow-ответы
         answers = {}
@@ -143,8 +147,10 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
             save_user_data(user_id, "grow_step", GROW_SEQUENCE[idx + 1])
             await state.set_state(DialogState.phase_2_listen)
         else:
-            save_user_data(user_id, "grow_step", None)
-            save_user_data(user_id, "emotion_step", "start")
+            bulk_save_user_data(user_id, {
+                "grow_step": None,
+                "emotion_step": "start"
+            })
             await state.set_state(DialogState.phase_3_emotions)
         return
 
@@ -279,8 +285,10 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
         support_text = data.get("summary_support", "").replace('"', '').strip()
 
         summary = f"Главная тема: {topic}\n\nВыводы пользователя:\n" + "\n".join(history[-3:])
-        save_user_data(user_id, "summary", summary)
-        save_user_data(user_id, "profile", "done")
+        bulk_save_user_data(user_id, {
+            "summary": summary,
+            "profile": "done"
+        })
         
         final_message = f"{support_text}\n\nЕсли хочешь — можем просто поболтать дальше."
         append_dialog_history(user_id, final_message, "assistant")
