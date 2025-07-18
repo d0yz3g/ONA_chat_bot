@@ -72,3 +72,14 @@ def save_user_traits(user_id: int, emotion: str, readiness: str, request_type: s
         "readiness": readiness,
         "request_type": request_type
     }).eq("user_id", user_id).execute()
+
+def bulk_save_user_data(user_id: int, updates: dict):
+    """
+    Обновляет несколько полей пользователя одним PATCH-запросом.
+    """
+    sanitized = {
+        key: sanitize_user_input(value) if isinstance(value, str) else value
+        for key, value in updates.items()
+    }
+    supabase.table("users").update(sanitized).eq("user_id", user_id).execute()
+
