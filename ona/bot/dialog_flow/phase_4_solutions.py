@@ -106,3 +106,11 @@ A) ...
 ...
 """
     return _generate_questions(prompt, max_questions=2)
+
+
+# 👇 ДОБАВЬ ВОТ ТАК — через 1 пустую строку после предыдущей функции
+def get_all_phase_4_questions(topic: str, user_history: List[str]) -> dict:
+    return {
+        "resources": explore_resources(topic, user_history),
+        "planning": collaborative_planning(topic, user_history)
+    }
