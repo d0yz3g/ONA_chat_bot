@@ -15,9 +15,7 @@ from ona.bot.supabase_service import (
 from ona.bot.core.openai_client import client
 from ona.bot.analysis import generate_user_summary
 from ona.bot.dialog_flow.phase_3_emotions import (
-    emotion_exploration,
-    explore_emotion_meaning,
-    reframe_thinking,
+    generate_phase_3_response,
     analyze_emotion_and_thinking,
 )
 from ona.bot.dialog_flow.phase_4_solutions import explore_resources, collaborative_planning
@@ -161,7 +159,7 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
             result = analyze_emotion_and_thinking(user_id, user_input)
             if result == "emotion":
                 save_user_data(user_id, "emotion_step", "meaning")
-                question, options = emotion_exploration()
+                question, options = generate_phase_3_response("emotion")
                 text = f"Я вижу, это очень важно для тебя. Это естественная реакция на такую ситуацию.\n\n{question}\n" + "\n".join(options)
                 await state.update_data(last_options=[opt[3:].strip() for opt in options])
                 append_dialog_history(user_id, text, "assistant")
@@ -189,7 +187,7 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
 
         elif emotion_step == "meaning":
             save_user_data(user_id, "emotion_step", "done")
-            question, options = explore_emotion_meaning()
+            question, options = generate_phase_3_response("meaning")
             text = f"{question}\n" + "\n".join(options)
             await state.update_data(last_options=[opt[3:].strip() for opt in options])
             append_dialog_history(user_id, text, "assistant")
@@ -198,8 +196,7 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
 
         elif emotion_step == "cognitive_1":
             save_user_data(user_id, "emotion_step", "cognitive_2")
-            blocks = reframe_thinking()
-            question, options = blocks[1]
+            question, options = generate_phase_3_response("cognitive_1")
             text = f"{question}\n" + "\n".join(options)
             await state.update_data(last_options=[opt[3:].strip() for opt in options])
             append_dialog_history(user_id, text, "assistant")
@@ -208,8 +205,7 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
 
         elif emotion_step == "cognitive_2":
             save_user_data(user_id, "emotion_step", "done")
-            blocks = reframe_thinking()
-            question, options = blocks[2]
+            question, options = generate_phase_3_response("cognitive_2")
             text = f"{question}\n" + "\n".join(options)
             append_dialog_history(user_id, text, "assistant")
             await message.answer(text)
