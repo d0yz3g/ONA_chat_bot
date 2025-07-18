@@ -1,6 +1,6 @@
 from openai import OpenAI
 from ona.bot.config import OPENAI_API_KEY
-from ona.bot.supabase_service import save_user_data, get_user_data
+from ona.bot.supabase_service import get_user_data
 from ona.bot.safety import detect_crisis
 from ona.bot.utils.security import sanitize_user_input
 
@@ -11,7 +11,6 @@ def analyze_emotion_and_thinking(user_id: int, user_text: str) -> str:
     Анализирует сообщение на наличие сильных эмоций или когнитивных искажений.
     Возвращает: "emotion", "distortion" или "none"
     """
-    # user_text should already be sanitized by process_message
     if detect_crisis(user_text):
         return "crisis"
 
@@ -35,83 +34,30 @@ def analyze_emotion_and_thinking(user_id: int, user_text: str) -> str:
         temperature=0,
         max_tokens=10,
     )
-    result = response.choices[0].message.content.strip().lower()
-    return result
+    return response.choices[0].message.content.strip().lower()
 
-def emotion_support(emotion: str) -> str:
-    return (
-        f"Я вижу, это очень важно для тебя. То, что ты чувствуешь — это нормально. "
-        f"Это может быть связано с чувством {emotion.lower()}.\n"
-        f"Хочешь немного исследовать, что стоит за этим?"
-    )
 
-def emotion_exploration() -> tuple[str, list[str]]:
-    prompt = """
-Ты — ИИ-помощница. Пользователь испытывает сильные эмоции.
+def generate_phase_3_response(step: str, user_input: str | None = None) -> tuple[str, list[str]]:
+    """
+    Генерация вопроса и вариантов на основе текущего шага:
+    - step = "emotion", "meaning", "cognitive_1", "cognitive_2"
+    """
+    instruction_map = {
+        "emotion": "Спроси мягко: Что стоит за этим чувством?",
+        "meaning": "Спроси: О чём может говорить это чувство?",
+        "cognitive_1": "Спроси: Что бы ты сказала подруге в такой ситуации?",
+        "cognitive_2": "Спроси: Какие у тебя есть доказательства за и против?",
+    }
 
-Сгенерируй вопрос в духе: "Что стоит за этим чувством?" — мягко, дружелюбно.
-Добавь 4 варианта A–D, не больше.
+    instruction = instruction_map.get(step)
+    if not instruction:
+        raise ValueError(f"Unknown step: {step}")
 
-Формат:
-[вопрос]
-A) ...
-B) ...
-C) ...
-D) ...
-"""
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": prompt}],
-        temperature=0.7,
-        max_tokens=300,
-    ).choices[0].message.content.strip()
-
-    lines = response.splitlines()
-    question = lines[0]
-    options = lines[1:5]
-    return question, options
-
-def explore_emotion_meaning() -> tuple[str, list[str]]:
-    prompt = """
-Ты — ИИ-помощница. Пользователь уже осознал чувства. Теперь ты хочешь мягко исследовать, о чём они говорят.
-
-Сгенерируй вопрос в духе: "О чём это чувство может говорить?" — доброжелательно, по-дружески.
-Добавь 4 варианта A–D, не больше.
-
-Формат:
-[вопрос]
-A) ...
-B) ...
-C) ...
-D) ...
-"""
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": prompt}],
-        temperature=0.7,
-        max_tokens=300,
-    ).choices[0].message.content.strip()
-
-    lines = response.splitlines()
-    question = lines[0]
-    options = lines[1:5]
-    return question, options
-
-def reframe_thinking() -> list[tuple[str, list[str]]]:
-    prompts = [
-        "Спроси мягко: А есть ли другой способ посмотреть на это?",
-        "Спроси: Что бы ты сказала подруге в такой ситуации?",
-        "Спроси: Какие у тебя есть доказательства за и против?",
-    ]
-
-    results = []
-
-    for instruction in prompts:
-        full_prompt = f"""
-Ты — ИИ-помощница. Помогаешь человеку справиться с негативным мышлением.
+    prompt = f"""
+Ты — ИИ-помощница. Пользователь проходит эмоциональный анализ (фаза 3).
 
 {instruction}
-Добавь 4 варианта ответа (A–D), никаких пояснений.
+Добавь 4 варианта ответа (A–D), без пояснений, на ты.
 
 Формат:
 [вопрос]
@@ -120,16 +66,15 @@ B) ...
 C) ...
 D) ...
 """
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "system", "content": full_prompt}],
-            temperature=0.7,
-            max_tokens=300,
-        ).choices[0].message.content.strip()
 
-        lines = response.splitlines()
-        question = lines[0]
-        options = lines[1:5]
-        results.append((question, options))
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": prompt}],
+        temperature=0.7,
+        max_tokens=300,
+    ).choices[0].message.content.strip()
 
-    return results
+    lines = response.splitlines()
+    question = lines[0]
+    options = lines[1:5]
+    return question, options
