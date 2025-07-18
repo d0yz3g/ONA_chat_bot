@@ -18,6 +18,7 @@ from ona.bot.dialog_flow.phase_3_emotions import (
 from ona.bot.dialog_flow.phase_4_solutions import explore_resources, collaborative_planning
 from ona.bot.dialog_flow.phase_5_summary import summarize_insights
 from ona.bot.utils.security import sanitize_user_input
+from ona.bot.dialog_flow.phase_2_response import generate_phase_2_response  # вверху файла
 
 PHASE_ORDER = [
     DialogState.phase_1_init,
@@ -125,9 +126,8 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
             if val:
                 answers[step] = val
 
-        reflect = reflective_listening(user_input)
-        question, options = grow_questions(topic, current_grow, answers)
-        text = f"{reflect}\n\n{question}\n" + "\n".join(options)
+        question_block, options = generate_phase_2_response(user_input, topic, current_grow, answers)
+        text = f"{question_block}\n" + "\n".join(options)
         await state.update_data(last_options=[opt[3:].strip() for opt in options])
         append_dialog_history(user_id, text, "assistant")
         await message.answer(text)
