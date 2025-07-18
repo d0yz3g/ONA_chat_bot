@@ -89,21 +89,31 @@ async def process_message(message: Message, state: FSMContext, user_input: str |
 
     if current_state == DialogState.completed.state:
         append_dialog_history(user_id, user_input, "user")
-
+    
         summary = user_data.get("summary", "").strip()
         history = user_data.get("history", [])
-
-        prompt = (
-            "Ты — заботливая AI-подруга, с которой можно поговорить о чём угодно. "
-            "Ты не эксперт и не даёшь советов — ты слушаешь, поддерживаешь и говоришь по-человечески. "
-            "Вот краткий анализ того, что уже обсуждалось:\n"
-            f"{summary}\n\n"
-            "Вот выдержка из последних сообщений между вами:\n" +
-            "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in history[-20:]]) +
-            "\n\nОтветь искренне, тёпло и естественно — без шаблонов и без вариантов ответа. Просто продолжи разговор."
-        )
-
-        response = generate_ai_response(prompt)
+        joined_history = "\n".join(f"{m['role'].capitalize()}: {m['content']}" for m in history[-20:])
+    
+        prompt = f"""
+    Ты — заботливая AI-подруга, с которой можно поговорить о чём угодно. 
+    Ты не эксперт и не даёшь советов — ты слушаешь, поддерживаешь и говоришь по-человечески.
+    
+    Вот краткий анализ предыдущего разговора:
+    {summary}
+    
+    Вот выдержка из последних сообщений между вами:
+    {joined_history}
+    
+    Продолжи диалог искренне, тепло и естественно — без шаблонов и без вариантов ответа. Просто ответь как подруга.
+    """
+    
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": prompt}],
+            temperature=0.8,
+            max_tokens=500,
+        ).choices[0].message.content.strip()
+    
         append_dialog_history(user_id, response, "assistant")
         await message.answer(response)
         return
