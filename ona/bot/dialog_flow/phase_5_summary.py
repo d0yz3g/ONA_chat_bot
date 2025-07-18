@@ -4,6 +4,32 @@ from typing import List, Tuple
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+
+def _parse_summary_response(response: str) -> Tuple[str, List[str]]:
+    lines = [line.strip().strip('"') for line in response.splitlines() if line.strip()]
+    
+    # Вопрос
+    question_line = next((l for l in lines if not l.startswith(("A)", "B)", "C)", "D)"))), "Что ты бы хотела унести с собой из этого диалога?")
+
+    # Варианты
+    options = [line for line in lines if line.startswith(("A)", "B)", "C)", "D)"))][:4]
+    if len(options) < 4:
+        options = [
+            "A) Что-то, что дало мне спокойствие",
+            "B) Мысль, которая вдохновляет",
+            "C) Новое понимание себя",
+            "D) Просто ощущение, что меня поняли",
+        ]
+
+    # Завершающие фразы
+    closings = [line for line in lines if line not in options and line != question_line][-2:]
+    if len(closings) < 2:
+        closings = ["Ты и правда многое уже поняла", "Я рядом, если что"]
+
+    question_text = f"{question_line}\n" + "\n".join(options)
+    return question_text, closings
+
+
 def summarize_insights(topic: str, history: List[str]) -> Tuple[str, List[str]]:
     joined_history = "\n".join(f"- {msg}" for msg in history[-8:])
 
@@ -44,10 +70,4 @@ D) ...
         max_tokens=400,
     ).choices[0].message.content.strip()
 
-    lines = [line.strip().strip('"') for line in response.splitlines() if line.strip()]
-    question_line = lines[0] if lines and not lines[0].startswith(("A)", "B)", "C)", "D)")) else "Что ты бы хотела унести с собой из этого диалога?"
-    options = [line for line in lines if line.startswith(("A)", "B)", "C)", "D)"))][:4]
-    closing_lines = [line for line in lines if not line.startswith(("A)", "B)", "C)", "D)")) and line != question_line][-2:]
-
-    question_text = f"{question_line}\n" + "\n".join(options)
-    return question_text, closing_lines
+    return _parse_summary_response(response)
