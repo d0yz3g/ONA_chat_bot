@@ -5,7 +5,12 @@ from aiogram.methods import SendChatAction
 from ona.bot.state import DialogState
 from ona.bot.prompt_template import build_prompt
 from ona.bot.safety import detect_crisis, generate_crisis_response
-from ona.bot.supabase_service import save_user_data, append_dialog_history, get_user_data
+from ona.bot.supabase_service import (
+    save_user_data,
+    append_dialog_history,
+    get_user_data,
+    bulk_save_user_data,  # ← добавлено для объединённого PATCH
+)
 from ona.bot.core.openai_client import client
 from ona.bot.analysis import generate_user_summary
 from ona.bot.dialog_flow.phase_2_listen import grow_questions, reflective_listening
