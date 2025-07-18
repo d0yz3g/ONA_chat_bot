@@ -4,6 +4,26 @@ from typing import List, Tuple
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+def _generate_questions(prompt: str, max_questions: int = 2) -> List[Tuple[str, List[str]]]:
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": prompt}],
+        temperature=0.75,
+        max_tokens=600,
+    ).choices[0].message.content.strip()
+
+    blocks = response.split("\n\n")
+    results = []
+
+    for block in blocks[:max_questions]:
+        lines = block.strip().splitlines()
+        if len(lines) >= 6:
+            question = lines[0].strip()
+            options = [line.strip() for line in lines[1:6]]
+            results.append((question, options))
+
+    return results
+
 
 def explore_resources(topic: str, user_history: List[str]) -> List[Tuple[str, List[str]]]:
     joined_history = "\n".join(f"- {msg}" for msg in user_history[-6:])
@@ -40,23 +60,7 @@ E) ...
 A) ...
 ...
 """
-
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": prompt}],
-        temperature=0.75,
-        max_tokens=600,
-    ).choices[0].message.content.strip()
-
-    blocks = response.split("\n\n")
-    results = []
-
-    for block in blocks[:3]:
-        lines = block.strip().splitlines()
-        if len(lines) >= 6:
-            question = lines[0].strip()
-            options = [line.strip() for line in lines[1:6]]
-            results.append((question, options))
+    results = _generate_questions(prompt, max_questions=3)
 
     if not results:
         fallback_question = "Когда ты уже справлялась с похожей ситуацией раньше?"
@@ -101,22 +105,4 @@ E) ...
 A) ...
 ...
 """
-
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": prompt}],
-        temperature=0.75,
-        max_tokens=500,
-    ).choices[0].message.content.strip()
-
-    blocks = response.split("\n\n")
-    results = []
-
-    for block in blocks[:2]:
-        lines = block.strip().splitlines()
-        if len(lines) >= 6:
-            question = lines[0].strip()
-            options = [line.strip() for line in lines[1:6]]
-            results.append((question, options))
-
-    return results
+    return _generate_questions(prompt, max_questions=2)
