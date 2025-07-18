@@ -13,7 +13,6 @@ from ona.bot.supabase_service import (
 )
 from ona.bot.core.openai_client import client
 from ona.bot.analysis import generate_user_summary
-from ona.bot.dialog_flow.phase_2_listen import grow_questions, reflective_listening
 from ona.bot.dialog_flow.phase_3_emotions import (
     emotion_exploration,
     explore_emotion_meaning,
